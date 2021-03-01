@@ -5,7 +5,7 @@ import Box from "ui-box";
 
 import { Pane, Button, Table } from "evergreen-ui";
 import path from "path";
-import { NoProjects, NoSelectedProject } from "./components";
+import { NoProjects, NoSelectedProject } from "./components/components";
 import { NewProjectModal } from "./modals/NewProject";
 import { ipcRenderer } from "electron";
 import TimelineView from "./TimelineView";
