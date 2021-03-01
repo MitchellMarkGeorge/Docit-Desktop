@@ -1,5 +1,5 @@
-import { Dialog, Button, TextInputField, Checkbox } from "evergreen-ui";
-import React, { ReactElement } from "react";
+import { Dialog, TextInputField, Checkbox } from "evergreen-ui";
+import React from "react";
 import Box from "ui-box";
 import path from "path";
 import { pathExistsSync } from "fs-extra";
@@ -7,16 +7,16 @@ import { DOCIT_PATH } from "../core/internals";
 
 interface Props {
   isShown: boolean;
-  onConfirm: (alias: string) => void 
+  onConfirm: (alias: string) => void;
+  onClose: () => void; 
 }
 
-function NewProject({ isShown, onConfirm }: Props): ReactElement {
+export function NewProjectModal({ isShown, onConfirm, onClose }: Props) {
   const [value, setValue] = React.useState("");
   const [shouldUseAlias, setShouldUseAlias] = React.useState(false);
   const [isInValid, setIsInValid] = React.useState(false);
 
   function validateValue(value: string) {
-      value = value.trim();
       if (!value) return;
 
     setValue(value);
@@ -31,7 +31,7 @@ function NewProject({ isShown, onConfirm }: Props): ReactElement {
     }
   }
   return (
-    <Dialog isShown={isShown} title="New Project" intent="success" confirmLabel="Create Project" onConfirm={() => onConfirm(value)}>
+    <Dialog onCloseComplete={onClose} isShown={isShown} title="New Project" intent="success" confirmLabel="Create Project" onConfirm={() => onConfirm(value.trim())}>
       <Box
         display="flex"
         flexDirection="column"
@@ -66,4 +66,4 @@ function NewProject({ isShown, onConfirm }: Props): ReactElement {
   );
 }
 
-export default NewProject;
+

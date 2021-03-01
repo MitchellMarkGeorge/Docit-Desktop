@@ -1,22 +1,13 @@
-import {
-  Heading,
-  Pane,
-  Text,
-  Table,
-  IconButton,
-  MoreIcon,
-  Popover,
-  Menu,
-  Position,
-  Button,
-  toaster,
-} from "evergreen-ui";
+import { Heading, Text, Button, toaster } from "evergreen-ui";
 import React, { Component } from "react";
 import Box from "ui-box";
 import * as internals from "./core/internals";
-import { ProjectConfig, ProjectVersions } from "./core/types";
-import NewVersion from "./modals/NewVersion";
-import { VeiwVersion } from "./modals/VeiwVersion";
+import { ProjectConfig, ProjectVersions, Version, ViewedVersion } from "./core/types";
+import {NewVersionModal} from "./modals/NewVersion";
+import { VeiwVersionModal } from "./modals/VeiwVersion";
+import { Timeline } from "./components/Timeline";
+import { shell } from "electron";
+import { LRUCache } from "./core/cache";
 
 interface Props {
   alias: string;
@@ -26,71 +17,119 @@ interface State {
   config?: ProjectConfig;
   showVersionModal?: boolean;
   showNewVersionModal?: boolean;
-  currentViewedVersion?: {
-    file_hash: string;
-    comments: string;
-    date: number;
-    version_number: string;
-  };
+  currentViewedVersion?: ViewedVersion;
 }
 
 export default class TimelineView extends Component<Props, State> {
   state: State = { showVersionModal: false };
 
   componentDidMount() {
+    
+    // I try and cache all the projects so there amount of file reads are reduced
+    let cache = LRUCache.getInstance(10);
+
+
     const { alias } = this.props;
-    this.setState({
-      versions: internals.getProjectVersions(alias),
-      config: internals.getProjectConfig(alias),
-    });
-    // console.log(internals.getProjectVersions(this.props.alias));
+
+    let stateObject: State;
+
+    if (cache.has(alias)) {
+      console.log("Already in cache");
+      stateObject = cache.get(alias);
+      
+    } else {
+      console.log("Not in cache");
+      const newStateValue = { 
+        versions: internals.getProjectVersions(alias),
+        config: internals.getProjectConfig(alias),
+      }
+      stateObject = newStateValue;
+      cache.set(alias, newStateValue); // adds new project to cache
+    }
+
+    this.setState(stateObject);
+
+
   }
 
-  viewVersion = (currentVersion: any) => {
+  openDocument = () => {
+    shell.openPath(this.state.config.documentPath);
+  };
+
+  viewVersion = (currentVersion: ViewedVersion) => {
     this.setState({
       showVersionModal: true,
       currentViewedVersion: currentVersion,
     });
   };
 
-  closeDialog = () => {
+  closeVersionViewModal = () => {
     this.setState({ showVersionModal: false });
   };
 
-  onConfirm = (comments: string) => {
+  newVersion = (comments: string) => {
     const { config, versions } = this.state;
     try {
-      const newVersions = internals.new_version(
+      // this includes the new version. 
+      //Should i just sent the Version object individually and then setState() ?
+      const updatedVersions = internals.new_version(
         this.props.alias,
         config,
         versions,
         comments
       );
-      this.setState({ showNewVersionModal: false, versions: newVersions });
+      this.setState({ showNewVersionModal: false, versions: updatedVersions });
     } catch (error) {
-      console.log(error);
-      toaster.danger("Changes must be mande before new version is made");
+        console.log(error);
+        if (error.message === "No file changes made") {
+            toaster.danger("Changes must be made before new version is made");
+        } else {
+            toaster.danger("Error creating new version. If the file is open, close it");
+        }
+      
+      
     }
   };
 
-  peekVersion = (version: any, versionNumber: string) => {
+  rollbackVersion = (versionNumber: string) => {
+    const { config, versions } = this.state; 
+    const version = versions[versionNumber];
+    try {
+      const updatedConfig = internals.rollback(
+        this.props.alias,
+        versionNumber,
+        config,
+        version
+      );
+      toaster.success("Successfully rolledback to version " + versionNumber);
+      this.setState({ config: updatedConfig });
+    } catch (error) {
+      console.log(error);
+      toaster.danger("An error occured");
+    }
+  };
+
+  peekVersion = (version: Version, versionNumber: string) => {
     const { config } = this.state;
-      internals.peek(this.props.alias, versionNumber, config, version);
-      toaster.success("Successfully made file")
-  }
+    internals.peek(this.props.alias, versionNumber, config, version);
+    toaster.success("Successfully made file");
+  };
 
   render() {
     return (
       <>
-        <VeiwVersion
-          onClose={this.closeDialog}
+        <VeiwVersionModal
+          onClose={this.closeVersionViewModal}
           version={this.state?.currentViewedVersion}
           isShown={this.state?.showVersionModal}
         />
 
-        <NewVersion
+        <NewVersionModal
           isShown={this.state?.showNewVersionModal}
-          onConfirm={this.onConfirm}
+          onConfirm={this.newVersion}
+          onClose={() => {
+              this.setState({ showNewVersionModal: false })
+          }}
         />
 
         <Box
@@ -103,22 +142,26 @@ export default class TimelineView extends Component<Props, State> {
           gridTemplateRows="10% 90%"
         >
           <Box display="flex" alignItems="center">
-            <Heading size={900}>{this.props.alias}</Heading>
+            <Heading onDoubleClick={this.openDocument} size={900}>
+              {this.props.alias}
+            </Heading>
             <Button
               intent="success"
               marginLeft="auto"
               appearance="primary"
+              textOverflow="ellipsis"
               onClick={() => this.setState({ showNewVersionModal: true })}
             >
               New Version
             </Button>
           </Box>
 
-          {/* <Box height="100%"> */}
+          
 
           {this.state?.versions && Object.keys(this.state?.versions).length ? (
             <Timeline
-              onSelect={this.viewVersion}
+              rollBackVersion={this.rollbackVersion}
+              viewVersion={this.viewVersion}
               currentVersion={this.state.config.currentVersion}
               versions={this.state.versions}
               peekVersion={this.peekVersion}
@@ -128,78 +171,9 @@ export default class TimelineView extends Component<Props, State> {
               <Text size={300}>There are not versions to display.</Text>
             </Box>
           )}
-          {/* <Timeline /> */}
-          {/* </Box> */}
         </Box>
       </>
     );
   }
 }
 
-interface TimelineProps {
-  versions: ProjectVersions;
-  currentVersion: string;
-  onSelect: (currentVersion: any) => void;
-  peekVersion: (version: any, versionNumber: string) => void
-}
-
-function Timeline({ versions, currentVersion, onSelect, peekVersion }: TimelineProps) {
-  return (
-    <Table>
-      <Table.Head>
-        <Table.TextHeaderCell>Version</Table.TextHeaderCell>
-        <Table.TextHeaderCell>Date Created</Table.TextHeaderCell>
-        <Table.TextHeaderCell>Comments</Table.TextHeaderCell>
-      </Table.Head>
-      <Table.Body height="90%">
-        {Object.keys(versions)
-          .reverse()
-          .map((versionNumber, index) => {
-            const { comments, date } = versions[versionNumber];
-
-            return (
-              <Table.Row
-                // isSelectable
-
-                intent={currentVersion === versionNumber ? "success" : null}
-                //   background="white"
-                key={index}
-              >
-                <Table.TextCell>{versionNumber}</Table.TextCell>
-                <Table.TextCell>{new Date(date).toDateString()}</Table.TextCell>
-                <Table.TextCell textOverflow="ellipsis">
-                  {comments || "No Comments"}
-                </Table.TextCell>
-                <Table.Cell flex="none">
-                  <Popover
-                    content={
-                      <Menu.Group>
-                        <Menu.Item onSelect={() => peekVersion(versions[versionNumber], versionNumber)}>Peek Version</Menu.Item>
-                        <Menu.Item
-                          onSelect={() =>
-                            onSelect({
-                              ...versions[versionNumber],
-                              version_number: versionNumber,
-                            })
-                          }
-                        >
-                          More Info
-                        </Menu.Item>
-                      </Menu.Group>
-                    }
-                    position={Position.BOTTOM_RIGHT}
-                  >
-                    <IconButton
-                      icon={MoreIcon}
-                      height={24}
-                      appearance="minimal"
-                    />
-                  </Popover>
-                </Table.Cell>
-              </Table.Row>
-            );
-          })}
-      </Table.Body>
-    </Table>
-  );
-}

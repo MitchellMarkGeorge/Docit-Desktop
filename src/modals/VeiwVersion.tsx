@@ -1,20 +1,15 @@
 import React from "react";
 import Box from "ui-box";
 import { Dialog, Paragraph } from "evergreen-ui";
-import { ProjectVersions } from "../core/types";
+import { ProjectVersions, ViewedVersion } from "../core/types";
 
 interface Props {
   isShown: boolean;
-  version: {
-    file_hash: string,
-    comments: string,
-    date: number,
-    version_number: string
-  };
+  version: ViewedVersion;
   onClose: () => void
 }
 
-export const VeiwVersion = (props: Props) => {
+export function VeiwVersionModal(props: Props) {
 //   const { comments, date, file_hash, version_number } = props?.version;
   return (
     <Dialog

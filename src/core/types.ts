@@ -5,11 +5,7 @@ export interface ProjectConfig {
 }
 
 export interface ProjectVersions {
-  [version: string]: {
-    file_hash: string;
-    comments: string;
-    date: number;
-  };
+  [version: string]: Version;
 }
 
 export interface Version {
@@ -17,3 +13,8 @@ export interface Version {
   comments: string;
   date: number;
 }
+
+export interface ViewedVersion extends Version {
+  version_number: string; // should the version object be a seperate key?
+}
+

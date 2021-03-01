@@ -6,7 +6,7 @@ import Box from "ui-box";
 import { Pane, Button, Table } from "evergreen-ui";
 import path from "path";
 import { NoProjects, NoSelectedProject } from "./components";
-import NewProject from "./modals/NewProject";
+import { NewProjectModal } from "./modals/NewProject";
 import { ipcRenderer } from "electron";
 import TimelineView from "./TimelineView";
 // should integrate with CLI
@@ -19,14 +19,11 @@ interface State {
 
 export default class App extends Component<{}, State> {
   state: State = { projects: [] };
-  documentPath: string; // put in state??
+  documentPath: string;
 
   componentDidMount() {
-    console.log(internals.getProjects());
     this.addIpcListeners();
-    this.setState({ projects: internals.getProjects() }, () =>
-      console.log(this.state)
-    );
+    this.setState({ projects: internals.getProjects() });
   }
 
   componentWillUnmount() {
@@ -62,22 +59,22 @@ export default class App extends Component<{}, State> {
     this.setState({ currentAlias: alias });
   };
 
- 
-
   openFileDialog = () => {
-    // this.setState({ showNewProjectModal: true});
     ipcRenderer.send("select-document");
   };
 
   render() {
     return (
       <>
-        <NewProject
+        <NewProjectModal
           isShown={this.state.showNewProjectModal}
           onConfirm={this.createNewProject}
+          onClose={() => {
+            this.setState({ showNewProjectModal: false });
+            this.documentPath = undefined; // is this needed
+          }}
         />
 
-      
         <Box
           height="100%"
           display="grid"
@@ -92,31 +89,21 @@ export default class App extends Component<{}, State> {
             // overflow="auto"
             height="100%"
           >
-            {/* {!this.state?.projects?.length && (
-              // <Box
-              //   height="100%"
-              //   display="flex"
-              //   justifyContent="center"
-              //   alignItems="center"
-              // >
-              //   <Text>No Projects</Text>
-              // </Box>
-
-              <NoProjects />
-            )} */}
-
             {this.state?.projects?.length > 0 ? (
-              // figure out Context.Provider value issue
+              // figure out Context.Provider value issue (might be internal)
 
-              this.state.projects.map((project, index) => (
+              this.state.projects.map((projectAlias, index) => (
                 <Table.Row
                   isSelectable
+                  isHighlighted={this.state.currentAlias === projectAlias}
                   key={index}
                   onSelect={() => {
-                    this.selectProject(project);
+                    this.selectProject(projectAlias);
                   }}
                 >
-                  <Table.TextCell textProps={{ fontSize: "1rem"}} fontSize="1rem">{project}</Table.TextCell>
+                  <Table.TextCell textProps={{ fontSize: "1rem" }}>
+                    {projectAlias}
+                  </Table.TextCell>
                 </Table.Row>
               ))
             ) : (
@@ -136,32 +123,10 @@ export default class App extends Component<{}, State> {
               <TimelineView
                 alias={this.state.currentAlias}
                 key={this.state.currentAlias}
-              /> // use a hash??
+              /> // the key renders each indeividal product seperatly, instaead of updating
             ) : (
               <NoSelectedProject />
             )}
-            {/* {this.state.currentAlias && (
-              <NoSelectedProject />
-
-              // <Box height="100%" width="100%" padding="1rem">
-
-              //     <Heading size={900}>TEST</Heading>
-              // </Box>
-              // <Box
-              //   height="100%"
-              //   display="flex"
-              //   justifyContent="center"
-              //   alignItems="center"
-              // >
-              //   <Box textAlign="center">
-              //     <Heading size={900} marginBottom="1rem">
-              //       Docit
-              //     </Heading>
-
-              //     <Text>Manage your Word Documents with ease</Text>
-              //   </Box>
-              // </Box>
-            )} */}
           </Pane>
 
           <Pane
@@ -169,21 +134,10 @@ export default class App extends Component<{}, State> {
             borderTop
             display="flex"
             alignItems="center"
-            // justifyContent="space-evenly"
           >
-            {/* {this.state.currentAlias && (
-              <React.Fragment>
-                <Button marginLeft="1rem" appearance="primary" intent="success">
-                  New Version
-                </Button>
-                
-              </React.Fragment>
-            )} */}
-
             <Button
               appearance="primary"
               intent="success"
-              // marginLeft="auto"
               marginLeft="1rem"
               onClick={this.openFileDialog}
             >

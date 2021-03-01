@@ -7,6 +7,11 @@ function createWindow() {
   win = new BrowserWindow({
     width: 800,
     height: 600,
+    minHeight: 600,
+    minWidth: 800,
+    show: false,
+    maximizable: false,
+    fullscreenable: false, // think about this!
     webPreferences: {
       nodeIntegration: true,
     },
@@ -18,22 +23,26 @@ function createWindow() {
       : `file://${path.join(__dirname, "../build/index.html")}`
   );
 
+  win.once("ready-to-show", () => {
+    win.show();
+  })
+
   if (!isDev) {
     win.removeMenu();
   }
-}
 
-ipcMain.on("select-document", async (event) => {
-  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-    defaultPath: app.getPath("documents"),
-    title: "Choose a Word document",
-    buttonLabel: "Choose file",
-    filters: [{ name: "Word Documents", extensions: ["doc", "docx"] }],
-    properties: ["openFile"],
+  ipcMain.on("select-document", async (event) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      defaultPath: app.getPath("documents"),
+      title: "Choose a Word document",
+      buttonLabel: "Choose file",
+      filters: [{ name: "Word Documents", extensions: ["doc", "docx"] }],
+      properties: ["openFile"],
+    });
+    const [documentPath] = filePaths;
+    event.reply("document-selected", { canceled, documentPath });
   });
-  const [documentPath] = filePaths;
-  event.reply("document-selected", { canceled, documentPath });
-});
+}
 
 app.whenReady().then(createWindow);
 

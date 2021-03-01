@@ -101,10 +101,6 @@ export function peek(alias: string, versionNumber: string, config: ProjectConfig
 }
 
 export function new_version(alias: string, config: ProjectConfig, versions: ProjectVersions, comments: string): ProjectVersions {
-  
-  
-  
-
   // update version number
 
 
@@ -117,7 +113,7 @@ export function new_version(alias: string, config: ProjectConfig, versions: Proj
   // Dosen't let the user create a new version of the file has the same content (what the hashes are made from)
   if (versions[config.currentVersion]?.file_hash === file_hash) {
     // basically a checksum
-    throw new Error("Unable to create new version - No changes made");
+    throw new Error("No file changes made");
   }
   // should i let the user still create a new version if no changes were made
 
@@ -149,4 +145,56 @@ export function new_version(alias: string, config: ProjectConfig, versions: Proj
 function getFileName(filepath: string) {
   const extension = path.extname(filepath);
   return path.basename(filepath, extension)
+}
+
+// export function rollback(alias: string, versionNumber: string, config: ProjectConfig, versions: ProjectVersions): ProjectConfig {
+  
+//     // get the file from the requested version object
+//     const { file_hash } = versions[versionNumber];
+
+//     // get the compressed buffer from version_files using the hash (the saved compressed file of the version)
+//     // this can be turned into seperate functions
+//     const compressedBuffer = fse.readFileSync(
+//       path.join(PROJECT_PATH(alias), "version_files", file_hash)
+//     );
+
+//     // decompress the buffer
+    
+//     const decompressedBuffer = zlib.brotliDecompressSync(compressedBuffer);
+
+//     fse.writeFileSync(config.documentPath, decompressedBuffer);
+
+//     config.currentVersion = versionNumber;
+
+//     saveConfigFile(config, alias);
+//     return config;
+
+    
+ 
+// }
+
+export function rollback(alias: string, versionNumber: string, config: ProjectConfig, version: Version): ProjectConfig {
+  
+  // get the file from the requested version object
+  const { file_hash } = version;
+
+  // get the compressed buffer from version_files using the hash (the saved compressed file of the version)
+  // this can be turned into seperate functions
+  const compressedBuffer = fse.readFileSync(
+    path.join(PROJECT_PATH(alias), "version_files", file_hash)
+  );
+
+  // decompress the buffer
+  
+  const decompressedBuffer = zlib.brotliDecompressSync(compressedBuffer);
+
+  fse.writeFileSync(config.documentPath, decompressedBuffer);
+
+  config.currentVersion = versionNumber;
+
+  saveConfigFile(config, alias);
+  return config;
+
+  
+
 }

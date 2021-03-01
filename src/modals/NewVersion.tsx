@@ -1,16 +1,14 @@
-import { Dialog, Button, TextInputField, Checkbox } from "evergreen-ui";
-import React, { ReactElement } from "react";
+import { Dialog, TextInputField, Checkbox } from "evergreen-ui";
+import React from "react";
 import Box from "ui-box";
-import path from "path";
-import { pathExistsSync } from "fs-extra";
-import { DOCIT_PATH } from "../core/internals";
 
 interface Props {
   isShown: boolean;
   onConfirm: (comments: string) => void;
+  onClose: () => void;
 }
 
-function NewVersion({ isShown, onConfirm }: Props): ReactElement {
+export function NewVersionModal({ isShown, onConfirm, onClose }: Props) {
   const [value, setValue] = React.useState("");
   const [shouldUseComments, setShouldUseComments] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -20,6 +18,7 @@ function NewVersion({ isShown, onConfirm }: Props): ReactElement {
       isShown={isShown}
       title="New Project"
       intent="success"
+      onCloseComplete={onClose}
       confirmLabel={isLoading ? "Loading..." : "Create New Version"}
       onConfirm={() => {
         setIsLoading(true);
@@ -55,4 +54,4 @@ function NewVersion({ isShown, onConfirm }: Props): ReactElement {
   );
 }
 
-export default NewVersion;
+
