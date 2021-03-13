@@ -3,6 +3,12 @@ const isDev = require("electron-is-dev");
 const path = require("path");
 
 let win = null;
+
+const Store = require('electron-store');
+
+const store = new Store();
+
+
 function createWindow() {
   win = new BrowserWindow({
     width: 800,
@@ -42,6 +48,14 @@ function createWindow() {
     const [documentPath] = filePaths;
     event.reply("document-selected", { canceled, documentPath });
   });
+
+  ipcMain.handle("last-opened-project", () => {
+    return store.get("lastOpenedProject");
+  })
+
+  ipcMain.on("save-last-opened-project", (event, lastProject) => {
+    store.set("lastOpenedProject", lastProject);
+  })
 }
 
 app.whenReady().then(createWindow);

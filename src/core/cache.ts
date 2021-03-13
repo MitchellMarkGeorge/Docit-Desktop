@@ -12,7 +12,7 @@ export class LRUCache {
   }
 
   public static getInstance(maxCapacity: number): LRUCache {
-    // singleton pattern
+    // singleton pattern - makes sure the cached items persist between renders
     if (!LRUCache.instance) {
       LRUCache.instance = new LRUCache(maxCapacity);
     }

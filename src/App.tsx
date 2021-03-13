@@ -21,9 +21,17 @@ export default class App extends Component<{}, State> {
   state: State = { projects: [] };
   documentPath: string;
 
-  componentDidMount() {
+  async componentDidMount() {
     this.addIpcListeners();
-    this.setState({ projects: internals.getProjects() });
+    const lastOpenedProject: string = await ipcRenderer.invoke("last-opened-project");
+    this.setState({
+      projects: internals.getProjects(),
+      currentAlias: lastOpenedProject,
+    });
+    // saves the last oppened project
+    window.addEventListener("beforeunload", () => {
+      ipcRenderer.send("save-last-opened-project", this.state.currentAlias);
+    });
   }
 
   componentWillUnmount() {

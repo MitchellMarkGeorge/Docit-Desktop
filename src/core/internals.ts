@@ -5,6 +5,9 @@ import fse from "fs-extra";
 import zlib from "zlib";
 import hasha from "hasha";
 
+// import * as fs from "fs/promises";
+
+
 export const DOCIT_PATH = path.join(homedir(), ".docit");
 
 export function PROJECT_PATH(alias: string) {
@@ -47,7 +50,7 @@ export function getProjectVersions(alias: string): ProjectVersions {
 export function getProjects(): string[] {
   if (!fse.pathExistsSync(DOCIT_PATH)) {
     return []; // should i make the docit dir???
-    // will this throw an error?
+   
   }
   return fse
     .readdirSync(DOCIT_PATH)
@@ -198,3 +201,4 @@ export function rollback(alias: string, versionNumber: string, config: ProjectCo
   
 
 }
+

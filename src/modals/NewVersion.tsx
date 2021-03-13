@@ -1,4 +1,4 @@
-import { Dialog, TextInputField, Checkbox } from "evergreen-ui";
+import { Dialog, Checkbox, TextareaField } from "evergreen-ui";
 import React from "react";
 import Box from "ui-box";
 
@@ -39,7 +39,7 @@ export function NewVersionModal({ isShown, onConfirm, onClose }: Props) {
           />
 
           {shouldUseComments && (
-            <TextInputField
+            <TextareaField
               label="Version Comments"
               placeholder="Version Comments"
               value={value}
